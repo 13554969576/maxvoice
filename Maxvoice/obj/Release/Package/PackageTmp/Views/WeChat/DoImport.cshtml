@@ -1,0 +1,33 @@
+﻿@using Maxvoice.Models;
+@{    ViewBag.Title = "Memeber Import Result";
+      List<WeChatUserViewModel> users = ViewData["users"] as List<WeChatUserViewModel>;
+}
+<link rel="stylesheet" href="/css/maxvoice.css" />
+<h3>@ViewBag.Title</h3>
+<hr />
+@ViewData["ErrorMsg"]
+<div style="max-height:460px;overflow-y:auto;">
+    <table class="gridtable">
+        <tr>
+            <th>Name</th>
+            <th>Mobile</th>
+            <th>Email</th>
+            <!-- <th>WeChatId</th> -->
+            <th>Gender</th>
+            <th>Import Result</th>
+            <th>Error Message</th>
+        </tr>
+        @foreach (WeChatUserViewModel user in users)
+            {
+            <tr>
+                <td>@user.Name</td>
+                <td>@user.Mobile</td>
+                <td>@user.Email</td>
+
+                <td>@user.GenderText</td>
+                <td>@user.ImportResult</td>
+                <td>@user.ImportFailarReason</td>
+            </tr>
+        }
+    </table>
+    </div>

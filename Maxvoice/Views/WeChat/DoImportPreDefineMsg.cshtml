@@ -1,0 +1,27 @@
+﻿@using Maxvoice.Models;
+@{    ViewBag.Title = "PreDefined Message Import Result";
+      List<EnumDataViewModel> data = ViewData["data"] as List<EnumDataViewModel>;
+}
+<link rel="stylesheet" href="/css/maxvoice.css" />
+<h3>@ViewBag.Title</h3>
+<hr />
+@ViewData["ErrorMsg"]
+<div style="max-height:460px;overflow-y:auto;">
+    <table class="gridtable">
+        <tr>
+            <th>Name/Scenario</th>
+            <th>Content</th>
+            <th>Import Result</th>
+            <th>Error Message</th>
+        </tr>
+        @foreach (EnumDataViewModel d in data)
+            {
+            <tr>
+                <td>@d.Name</td>
+                <td>@d.Value</td>
+                <td>@d.ImportResult</td>
+                <td>@d.ImportFailarReason</td>
+            </tr>
+        }
+    </table>
+    </div>

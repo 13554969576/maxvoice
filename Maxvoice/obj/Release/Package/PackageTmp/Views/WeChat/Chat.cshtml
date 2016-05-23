@@ -1,0 +1,60 @@
+﻿@using Maxvoice.Models;
+@{    
+    WeChatUserViewModel user = ViewData["user"] as WeChatUserViewModel;
+}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+    <title>Service Account Information</title>
+    <link rel="stylesheet" href="/css/weui.css" />
+    <script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>    
+</head>
+<body>
+    <div class="weui_msg">        
+        <div class="weui_cells_title">Account Infomation</div>
+        <div class="weui_cells">
+            <div class="weui_cell">
+                <div class="weui_cell_bd weui_cell_primary">
+                    <table>
+                        <tr>
+                            <td>Name:</td>
+                            <td>@user.CustName</td>
+                        </tr>
+                        <tr>
+                            <td>Mobile:</td>
+                            <td>@user.Mobile</td>
+                        </tr>
+                        <tr>
+                            <td>Email:</td>
+                            <td>@user.Email</td>
+                        </tr>
+                        <tr>
+                            <td>WeChatId:</td>
+                            <td>@user.WeChatId</td>
+                        </tr>
+                        <tr>
+                            <td>Account Type:&nbsp;&nbsp;</td>
+                            <td>@user.AccountTypeText</td>
+                        </tr>
+                        <tr>
+                            <td>State:</td>
+                            <td>@user.SourceText</td>
+                        </tr>
+                        <tr>
+                            <td>Created Date</td>
+                            <td>@user.CreateDt</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="weui_opr_area">
+            <p class="weui_btn_area">
+                <a href="javascript:WeixinJSBridge.call('closeWindow');" class="weui_btn weui_btn_primary">Ok</a>               
+            </p>
+        </div>        
+    </div>
+
+</body>
+</html>

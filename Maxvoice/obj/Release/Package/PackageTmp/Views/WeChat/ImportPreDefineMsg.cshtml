@@ -1,0 +1,29 @@
+﻿
+@{
+    ViewBag.Title = "Import PreDefine Message From Excel";
+}
+<link rel="stylesheet" href="/css/maxvoice.css" />
+<h3>@ViewBag.Title</h3>
+<hr />
+<form action="DoImportPreDefineMsg" method="post" enctype="multipart/form-data">
+    <table>
+        <tr>
+            <td>
+                <label>File:</label>
+            </td>
+            <td><input type="file" name="file" required/> </td>
+        </tr>
+        <tr style="height:10px;">
+        </tr>
+        <tr>
+            <td colspan="2" style="align-content:center">
+                <input type="submit" name="button" value="Submit" />
+                <input type="reset" name="button" value="Reset" />
+            </td>
+        </tr>
+
+    </table>    
+</form>
+
+<a href="/files/ImportPreMsgTemplate.xls">Download Template</a>
+

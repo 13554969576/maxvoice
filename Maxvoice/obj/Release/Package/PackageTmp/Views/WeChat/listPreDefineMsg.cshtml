@@ -1,0 +1,38 @@
+﻿@using Maxvoice.Models;
+@{    ViewBag.Title = "PreDefine Message List";
+      List<EnumData> data = ViewData["data"] as List<EnumData>;
+}
+<link rel="stylesheet" href="/css/maxvoice.css" />
+<script type="text/javascript" src="/js/jquery-1.12.2.min.js"></script>
+<script>
+    function deletePreMsg(id) {
+        if(confirm("Please confirm to delete the entry?"))
+        $.post("/wechat/deletePreMsg", 'id='+id,
+            function (data) {
+                if (data.Code != 0) {
+                    alert("Delete fail");
+                } else {
+                    $("#tr_" + id).remove();
+                }
+            }, "json");
+    }
+</script>
+<h3>@ViewBag.Title</h3>
+@ViewData["ErrorMsg"]
+<div style="max-height:460px;overflow-y:auto;">
+    <table class="gridtable" style="width:98%">
+        <tr>
+            <th>Name/Scenario</th>
+            <th>Content</th>
+            <th>Action</th>
+        </tr>
+        @foreach (EnumData d in data)
+            {
+            <tr id="tr_@d.Id">
+                <td>@d.Name</td>
+                <td>@d.Value</td>
+                <td><img src="~/images/delete.png" alt="delete" onclick="deletePreMsg(@d.Id);" /></td>
+            </tr>
+        }
+    </table>
+    </div>

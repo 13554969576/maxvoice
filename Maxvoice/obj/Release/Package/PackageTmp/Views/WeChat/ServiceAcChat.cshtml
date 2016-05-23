@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html style="height: 100%;">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Service Account TSR</title>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="/js/jquery-1.12.2.min.js"></script>
+    <script type="text/javascript" src="/js/comm.js"></script>
+    <link rel="stylesheet" href="/css/maxvoice.css" />
+    <script>
+        var userId='@ViewData["userId"]';
+        var currentCustomer = null;
+        var users = new Object();
+        function openChat(openId, custName) {
+            $("#chatTitle").text("Chat with " + custName);
+            var user = users[openId];
+            $("#to\\.custName").text(nvl(user.CustName));
+            $("#to\\.mobile").text(nvl(user.Mobile));
+            $("#to\\.email").text(nvl(user.Email));
+            $("#to\\.state").text(nvl(user.StateText));
+            $("#to\\.source").text(nvl(user.SourceText));
+            $("#to\\.createDt").text(parseAspDtTm(user.CreateDt).format("yyyy-MM-dd"));
+            var cw;
+            if (currentCustomer != null) {
+                cw = $("#cw" + currentCustomer.OpenId.replace("-", ""));
+                if (cw.length == 1) {
+                    cw.hide();
+                    //$("#chatUserList tr[openid='" + currentCustomer.OpenId.replace("-", "") + "'] span[cntspan]").show();
+                }
+            }
+            currentCustomer = user;
+            $("input:hidden[name='openId']").val(openId);
+            cw = $("#cw" + openId.replace("-", ""));
+            if (cw.length == 0) {
+                createChatWindow(openId);
+            } else {
+                cw.show();
+                var parentWindow = $("#chatHisWindow");
+                parentWindow.scrollTop(parentWindow[0].scrollHeight);
+            }
+            $("#chatUserList tr[openid='" + currentCustomer.OpenId.replace("-", "") + "'] span[count]").text(0);
+            $("#chatUserList tr[openid='" + currentCustomer.OpenId.replace("-", "") + "'] span[cntspan]").hide();
+            $("#chatinput").val("");
+            $("#chatPanel").show();
+        }
+
+        function createChatWindow(openId) {
+            $.post("/wechat/getServiceAcLastMsg", { "openId": openId },
+             function (data) {
+                 var parentWindow = $("#chatHisWindow");
+                 parentWindow.append("<div id='cw" + openId.replace("-", "") + "'></div>");
+                 var cw = $("#cw" + openId.replace("-", ""));
+                 var charIds = "";
+                 for (var i = 0; i < data.length; i++) {
+                     var cls = data[i].Direction == "1" ? "msgInStyle" : "msgOutStyle";
+                     var who = data[i].Direction == "1" ? currentCustomer.CustName : nvl(data[i].UserId);
+                     cw.append("<div class='" + cls + "'>[" + parseAspDtTm(data[i].CreateTm).format("MM-dd hh:mm:ss") + "]" + who + ":&nbsp;&nbsp;" + data[i].Content + "<div>");
+                     if (data[i].State == "0") {
+                         charIds = charIds + data[i].Id + ","
+                     }
+                 }
+                 parentWindow.scrollTop(parentWindow[0].scrollHeight);
+                 if (charIds != "") markRead(charIds.substring(0,charIds.length-1));
+             }, "json");
+        }
+
+        function postMessage() {
+            var data = $("form").serialize();
+            $.post("/wechat/postServiceAcMsg", data,
+            function (data) {
+                if (data.Code != 0) {
+                   alert("message post fail, error message is " + data.Msg);
+                } else {
+                    var cw = $("#cw" + currentCustomer.OpenId.replace("-", ""));
+                    var cls =  "msgOutStyle";
+                    var who = userId;
+                    cw.append("<div class='" + cls + "'>[" + new Date().format("MM-dd hh:mm:ss") + "]" + who + ":&nbsp;&nbsp;" + $("#chatinput").val() + "<div>");
+                    $("#chatinput").val("");
+                    var parentWindow = $("#chatHisWindow");
+                    parentWindow.scrollTop(parentWindow[0].scrollHeight);
+                }
+            }, "json");
+        }
+
+        function markRead(chatIds) {
+            $.post("/wechat/markRead", "chatIds=" + chatIds);
+        }
+
+        function keypress() {
+            if (event.keyCode == 13 && !event.shiftKey) {
+                event.cancelBubble = true;
+                event.returnValue = false
+                postMessage();
+            }
+        }
+
+        window.setInterval(function () {
+            if (currentCustomer == null) return;
+            var openId = currentCustomer.OpenId;
+            $.post("/wechat/getServiceAcUnReadMsg", "openId=" + openId,
+            function (data) {
+                var cw = $("#cw" + openId.replace("-", ""));
+                if (cw.length == 0) return;
+                var charIds = "";
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].CustOpenId != openId) return;
+                    var cls = "msgInStyle";
+                    var who = currentCustomer.CustName;
+                    cw.append("<div class='" + cls + "'>[" + parseAspDtTm(data[i].CreateTm).format("MM-dd hh:mm:ss") + "]" + who + ":&nbsp;&nbsp;" + data[i].Content + "<div>");
+                    if (data[i].State == "0") {
+                        charIds = charIds + data[i].Id + ","
+                    }
+                }
+                var parentWindow = $("#chatHisWindow");
+                parentWindow.scrollTop(parentWindow[0].scrollHeight);
+                if (charIds != "") markRead(charIds.substring(0, charIds.length - 1));
+            }, "json");
+        }, 1000);
+
+        window.setInterval(function () {
+            $.post("/wechat/getServiceAcUnReadMsgCount", "",
+            function (data) {
+                var tblUserLst = $("#chatUserList");
+                for (var i = 0; i < data.length; i++) {
+                    var chat=data[i];
+                    var openIdForName = chat.OpenId.replace("-", "");
+                    if (!users[chat.OpenId]) {
+                        tblUserLst.append("<tr openid='" + openIdForName + "'><td><a href=\"javascript:openChat('" + chat.OpenId + "','" + chat.CustName + "');\" class='button green'><span name>" + chat.CustName + "</span><span cntspan>(<span count>" + chat.Count + "</span>)</span></a></td></tr>");
+                        users[chat.OpenId] = chat;
+                        continue;
+                    }
+                    if (currentCustomer!=null && chat.OpenId == currentCustomer.OpenId) continue;
+                    var tblUser = tblUserLst.find("tr[openid='" + openIdForName + "']");
+                    var spanCnt = tblUser.find("span[count]");
+                    spanCnt.text(chat.Count);
+                }
+            }, "json");
+        }, 3000);
+
+    </script>
+</head>
+<body style="height: 100%;">
+    <div style="position:absolute;left:1200px;top:5px;">
+        <a href="/" onclick="window.history.forward(1); ">logout</a>
+    </div>
+    <table style="height: 600px;width:100%">
+        <tr style="height: 100%;">
+            <td valign="top" style="height: 100%;width:20%">
+                <fieldset style="height: 594px;">
+                    <legend>Customer List</legend>
+                    <table id="chatUserList"></table>
+                </fieldset>
+            </td>
+            <td valign="top" style="width:80%">
+                <div id="chatPanel" style="display:none;">
+                    <fieldset style="height: 145px;">
+                        <legend>Customer Details</legend>
+                        <table>
+                            <tr>
+                                <td>Name:</td>
+                                <td id="to.custName"></td>
+                            </tr>
+                            <tr>
+                                <td>Mobile:</td>
+                                <td id="to.mobile"></td>
+                            </tr>
+                            <tr>
+                                <td>Email:</td>
+                                <td id="to.email"></td>
+                            </tr>
+                            <tr>
+                                <td>State:</td>
+                                <td id="to.state"></td>
+                            </tr>
+                            <tr>
+                                <td>Source:</td>
+                                <td id="to.source"></td>
+                            </tr>
+                            <tr>
+                                <td>Created Date:</td>
+                                <td id="to.createDt"></td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                    <fieldset style="height: 435px;padding-top:5px;">
+                        <legend id="chatTitle">Chat with 童艳喜</legend>
+                        <div id="chatHisWindow" style="height: 305px;overflow:auto;border:1px solid gray">
+
+                        </div>
+                        <div id="chatInputWindow" style="height: 70px;margin-top:5px">
+                            <form>
+                                <textarea name="msgContent" id="chatinput" style="height:60px;width:100%" onkeypress="keypress();" required></textarea>
+                                <input type="hidden" name="openId" />
+                                <input type="hidden" name="userId" value="@ViewData["userId"]" />
+                                <br />
+                                <div style="padding:5px;float:right">
+                                    <input type="button" value="Send" onclick="postMessage();" name="sendChat" />
+                                </div>
+                            </form>
+                        </div>
+                    </fieldset>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <script>
+        //$(function () { });
+    </script>
+</body>
+</html>

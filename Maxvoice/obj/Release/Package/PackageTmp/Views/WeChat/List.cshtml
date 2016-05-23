@@ -1,0 +1,46 @@
+﻿@using Maxvoice.Models;
+@{    ViewBag.Title = "Member List";
+      List<WeChatUserViewModel> users = ViewData["users"] as List<WeChatUserViewModel>;
+}
+<link rel="stylesheet" href="/css/maxvoice.css" />
+<script type="text/javascript" src="/js/jquery-1.12.2.min.js"></script>
+<script>
+    function deleteUser(id) {
+        if(confirm("Please confirm to delete the entry?"))
+        $.post("/wechat/deleteUser", 'accountType=@ViewData["accountType"]&id='+id,
+            function (data) {
+                if (data.Code != 0) {
+                    alert("Delete fail");
+                } else {
+                    $("#tr_" + id).remove();
+                }
+            }, "json");
+    }
+</script>
+<h3>@ViewBag.Title</h3>
+@ViewData["ErrorMsg"]
+<div style="max-height:460px;overflow-y:auto;">
+    <table class="gridtable" style="width:98%">
+        <tr>
+            <th>Name</th>
+            <th>Mobile</th>
+            <th>Email</th>
+            <th>WeChatId</th>
+            <th>Gender</th>
+            <th>State</th>
+            <th>Action</th>
+        </tr>
+        @foreach (WeChatUserViewModel user in users)
+            {
+            <tr id="tr_@user.Id">
+                <td>@user.CustName</td>
+                <td>@user.Mobile</td>
+                <td>@user.Email</td>
+                <td>@user.WeChatId</td>
+                <td>@user.GenderText</td>
+                <td>@user.StateText</td>
+                <td><img src="~/images/delete.png" alt="delete" onclick="deleteUser(@user.Id);" /></td>
+            </tr>
+        }
+    </table>
+    </div>

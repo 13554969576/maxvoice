@@ -1,0 +1,84 @@
+﻿@using Maxvoice.Models;
+@{    ViewBag.Title = "Add Customer To Addressbook";
+    List<WeChatUserViewModel> users = ViewData["users"] as List<WeChatUserViewModel>;
+
+}
+<link rel="stylesheet" href="/css/maxvoice.css" />
+<script type="text/javascript" src="/js/jquery-1.12.2.min.js"></script>
+<script>
+    function selectAll() {
+        $("#tbUsers input:checkbox").each(
+            function () {               
+                $(this).prop("checked",true);             
+            }
+        );
+    }
+
+    function unSelectAll(){
+        $("#tbUsers input:checkbox").each(
+            function () {
+                $(this).prop("checked", false);;
+            }
+            );
+    }
+
+    function selectMale(sex) {
+        $("#tbUsers tr").each(
+            function () {               
+                if ($(this).find("td").length != 6) return;
+                var s = $(this).find("td:nth-child(5)").text();                
+                if (s == sex) {
+                    $(this).find("input:checkbox").prop("checked", true);
+                } else {
+                    $(this).find("input:checkbox").prop("checked", false);
+                }
+            }
+            );
+
+    }
+</script>
+<h3>@ViewBag.Title</h3>
+<hr />
+@ViewData["ErrorMsg"]
+<div id="filter">
+    <input type="radio" onclick="selectAll();" name="fr" />ALL
+    <input type="radio" onclick="selectMale('Male');" name="fr" />Male
+    <input type="radio" onclick="selectMale('Female');" name="fr" />Female
+    <input type="radio" onclick="unSelectAll();" name="fr"  />Clear
+</div>
+<div style="max-height:430px;overflow-y:auto;">
+    <form action="DoInvite" method="post">
+        <table class="gridtable" style="width:98%" id="tbUsers">
+            <tr>
+                <th>Name</th>
+                <th>Mobile</th>
+                <th>Email</th>
+                <th>WeChatId</th>
+                <th>Gender</th>
+                <th>State</th>
+                @{ int i = 0;}
+                @foreach (WeChatUserViewModel user in users)
+            {
+                <tr>
+                    <td>
+                        <input type="checkbox" name="[@i].Selected" />@user.Name
+                        <input type="hidden" name="[@i].Id" value="@user.Id" /><input type="hidden" name="[@i].Name" value="@user.Name" />
+                    </td>
+                    <td>@user.Mobile<input type="hidden" name="[@i].Mobile" value="@user.Mobile" /></td>
+                    <td>@user.Email<input type="hidden" name="[@i].Email" value="@user.Email" /></td>
+                    <td>@user.WeChatId<input type="hidden" name="[@i].WeChatId" value="@user.WeChatId" /></td>
+                    <td>@user.GenderText<input type="hidden" name="[@i].Gender" value="@user.Gender" /></td>
+                    <td>@user.StateText<input type="hidden" name="[@i].State" value="@user.State" /></td>
+                </tr>
+                    i++;
+                }
+                <tr style="height:10px"></tr>
+                <tr style="border:none">
+                    <td colspan="6" style="border:none;text-align:center;padding-right:20px">
+                        <input type="submit" value="Submit" />
+                        <input type="reset" value="Reset" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>

@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title></title>
+	<meta charset="utf-8" />
+    <script type="text/javascript" src="/js/jquery-1.12.2.min.js"></script>
+    <link rel="stylesheet" href="/css/maxvoice.css" />
+    <script>
+        function showUrl(url, idx) {           
+            $("#menu a").each(
+                function (i) {                   
+                    if (i == idx) {                       
+                        $(this).removeClass("gray");
+                        $(this).addClass("green");
+                    } else {
+                        $(this).removeClass("green");
+                        $(this).addClass("gray");
+                    }
+                    
+                 }
+            );
+            $("#main").attr("src",url);
+        }
+    </script>
+</head>
+<body>
+    <div style="float:left;width:150px;height:485px;border:1px solid gray;padding:10px">
+        <nav id="menu">
+            <a href="javascript:showUrl('/wechat/listServiceMembers',0)" class="button gray">User List</a><br /><br />
+            <a href="javascript:showUrl('/wechat/serviceAcBroadcase',1)" class="button gray">Broadcast</a>
+        </nav>
+    </div>  
+    <div style="float:left;width:1050px;height:505px;border:1px solid gray;border-left:none">
+        <iframe id="main" src="" frameborder="0" scrolling="no" style="width:1045px;height:500px">
+
+        </iframe>
+    </div>
+</body>
+</html>

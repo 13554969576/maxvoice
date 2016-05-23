@@ -1,0 +1,418 @@
+﻿@using Maxvoice.Models;
+@{
+    List<EnumData> PreMsgs = ViewData["PreDefinedMsg"] as List<EnumData>;
+}
+<!DOCTYPE html>
+<html style="height: 100%;">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Enterprise Account TSR</title>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="/js/jquery-1.12.2.min.js"></script>
+    <script type="text/javascript" src="/js/comm.js"></script>
+    <link rel="stylesheet" href="/css/maxvoice.css" />
+    <script>
+        var userId = '@ViewData["userId"]';
+        var currentCustomer = null;
+        var users = new Object();
+        function openChat(openId, custName) {
+            //hideBoardcast();
+            var preCust = currentCustomer;
+            selectNone();
+            $("#chatTitle").text("Chat with " + custName);
+            var user = users[openId];
+            $("#to\\.custName").text(nvl(user.CustName));
+            $("#to\\.mobile").text(nvl(user.Mobile));
+            $("#to\\.email").text(nvl(user.Email));
+            $("#to\\.state").text(nvl(user.StateText));
+            $("#to\\.source").text(nvl(user.SourceText));
+            $("#to\\.createDt").text();
+            if (user.CreateDt) {
+                try{
+                    $("#to\\.createDt").text(parseAspDtTm(user.CreateDt).format("yyyy-MM-dd"));
+                } catch(e) {
+                }
+            }
+            //if (preCust != null) hideCustChatWindow(preCust.OpenId.remove("[^a-zA-Z0-9]"));
+            currentCustomer = user;
+            $(":checkbox[name='userlist'][value='" + openId + "']").prop("checked","checked");
+            $("input:hidden[name='openId']").val(openId);
+            var openId1 = openId.remove("[^a-zA-Z0-9]");
+            var cw = $("#cw" + openId1);
+            if (cw.length == 0) {
+                createChatWindow(openId);
+            } else {
+                cw.show();
+                var parentWindow = $("#chatHisWindow");
+                parentWindow.scrollTop(parentWindow[0].scrollHeight);
+            }
+            $("#chatUserList tr[openid='" + openId1 + "'] span[count]").text(0);
+            $("#chatUserList tr[openid='" + openId1 + "'] span[cntspan]").hide();
+            var eA = $("#chatUserList tr[openid='" + openId1 + "'] a");
+            var color = eA.attr("state");
+            eA.removeClass(color);
+            if (color == "green") debugger;
+            if (color == "red") color = "lightred";
+            eA.attr("preState", color);
+            eA.addClass("green");
+            eA.attr("state", "green");
+            $("#chatinput").val("");
+            $("#chatPanel").show();
+        }
+
+        function openBoardcast() {
+            hideChat();
+            if ($("#ckALL").prop("checked")) {
+                $("#boardcastTitle").text("Send Msg To All");
+            } else {
+                $("#boardcastTitle").text("Send Msg To Multiple");
+            };
+            $("#boardcastPanel").show();
+        }
+
+        function createChatWindow(openId) {
+            $.post("/wechat/getEnterpriseAcLastMsg", { "openId": openId },
+             function (data) {
+                 var parentWindow = $("#chatHisWindow");
+                 parentWindow.append("<div id='cw" + openId.remove("[^a-zA-Z0-9]") + "'></div>");
+                 var cw = $("#cw" + openId.remove("[^a-zA-Z0-9]"));
+                 var charIds = "";
+                 for (var i = 0; i < data.length; i++) {
+                     var cls = data[i].Direction == "1" ? "msgInStyle" : "msgOutStyle";
+                     var who = data[i].Direction == "1" ? currentCustomer.CustName : nvl(data[i].UserId);
+                     cw.append("<div class='" + cls + "'>[" + parseAspDtTm(data[i].CreateTm).format("MM-dd hh:mm:ss") + "]" + who + ":&nbsp;&nbsp;" + data[i].Content + "<div>");
+                     if (data[i].State == "0") {
+                         charIds = charIds + data[i].Id + ","
+                     }
+                 }
+                 parentWindow.scrollTop(parentWindow[0].scrollHeight);
+                 if (charIds != "") markRead(charIds.substring(0, charIds.length - 1));
+
+             }, "json");
+        }
+
+        function postMessage() {
+            var data = $("form").serialize();
+            var openIdForName=currentCustomer.OpenId.remove("[^a-zA-Z0-9]");
+            $.post("/wechat/postEnterpriseAcMsg", data,
+            function (data) {
+                if (data.Code != 0) {
+                    alert("message post fail, error message is " + data.Msg);
+                } else {
+                    var cw = $("#cw" + openIdForName);
+                    var cls = "msgOutStyle";
+                    var who = userId;
+                    cw.append("<div class='" + cls + "'>[" + new Date().format("MM-dd hh:mm:ss") + "]" + who + ":&nbsp;&nbsp;" + $("#chatinput").val() + "<div>");
+                    $("#chatinput").val("");
+                    var parentWindow = $("#chatHisWindow");
+                    parentWindow.scrollTop(parentWindow[0].scrollHeight);
+                    var eA = $("#chatUserList tr[openid='" + openIdForName + "'] a");
+                    eA.attr("preState", "lightblue");
+                }
+            }, "json");
+        }
+
+        function markRead(chatIds) {
+            $.post("/wechat/markRead", "chatIds=" + chatIds);
+        }
+
+        function keypress() {
+            if (event.keyCode == 13 && !event.shiftKey) {
+                event.cancelBubble = true;
+                event.returnValue = false
+                postMessage();
+            }
+        }
+
+        window.setInterval(function () {
+            if (currentCustomer == null) return;
+            var openId = currentCustomer.OpenId;
+            var who = currentCustomer.CustName;
+            $.post("/wechat/getEnterpriseAcUnReadMsg", "openId=" + openId,
+            function (data) {
+                if (openId != currentCustomer.OpenId) return;
+                var openIdForName=openId.remove("[^a-zA-Z0-9]");
+                var cw = $("#cw" + openIdForName);
+                if (cw.length == 0) return;
+                var charIds = "";
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].CustOpenId != openId) return;
+                    var cls = "msgInStyle";
+                    cw.append("<div class='" + cls + "'>[" + parseAspDtTm(data[i].CreateTm).format("MM-dd hh:mm:ss") + "]" + who + ":&nbsp;&nbsp;" + data[i].Content + "<div>");
+                    if (data[i].State == "0") {
+                        charIds = charIds + data[i].Id + ","
+                    }
+                }
+                var parentWindow = $("#chatHisWindow");
+                parentWindow.scrollTop(parentWindow[0].scrollHeight);
+                if (charIds != "") {
+                    markRead(charIds.substring(0, charIds.length - 1));
+                    var eA = $("#chatUserList tr[openid='" + openIdForName + "'] a");
+                    if (eA.attr("state") == "green") {
+                        eA.attr("preState", "lightred");
+                    }
+                }
+            }, "json");
+
+        }, 1000);
+
+        window.setInterval(function () {
+            $.post("/wechat/getEnterpriseAcUnReadMsgCount", "",
+            function (data) {
+                var tblUserLst = $("#chatUserList");
+                for (var i = 0; i < data.length; i++) {
+                    var chat = data[i];
+                    var openIdForName = chat.OpenId.remove("[^a-zA-Z0-9]");
+                    if (!users[chat.OpenId]) {
+                        users[chat.OpenId] = { OpenId: chat.OpenId, CustName: chat.OpenId, mobile: "", email: "", state: "Accepted Invite", source: "Unknow", createDt: "" };
+                        tblUserLst.append("<tr openid='" + openIdForName + "'><td><input  onclick='onSelectSingle(this);' type='checkbox' name='userlist' value='" + chat.OpenId + "' /><a href=\"javascript:openChat('" + chat.OpenId + "','" + chat.OpenId + "');\" class='button red' state='red'><span name>" + chat.OpenId + "</span><span cntspan>(<span count>" + chat.Cnt + "</span>)</span></a></td></tr>");
+                       
+                        continue;
+                    }
+                    var tblUser = tblUserLst.find("tr[openid='" + openIdForName + "']");
+                    var eA = tblUser.find("a");
+                    if (currentCustomer != null && chat.OpenId == currentCustomer.OpenId) {
+                        eA.attr("state", "lightred");
+                        continue;
+                    }
+                    var preColor = eA.attr("state");
+                    var spanCnt = tblUser.find("span[count]");
+                    eA.attr("state", "red");
+                    spanCnt.text(chat.Cnt);
+                    eA.removeClass(preColor);
+                    eA.addClass("red");
+                    tblUser.find("span[cntspan]").show();
+                }
+            }, "json");
+        }, 3000);
+
+        function loadCustList() {
+            $.post("/wechat/getEnterpriseAcCustList", "",
+            function (data) {
+                var tblUserLst = $("#chatUserList");
+                for (var i = 0; i < data.length; i++) {
+                    var cust = data[i];
+                    var openIdForName = cust.OpenId.remove("[^a-zA-Z0-9]");
+                    if (!users[cust.OpenId]) {
+                        tblUserLst.append("<tr openid='" + openIdForName + "'><td><input onclick='onSelectSingle(this);' type='checkbox' name='userlist' value='" + cust.OpenId + "' /><a href=\"javascript:openChat('" + cust.OpenId + "','" + cust.CustName + "');\" class='button gray' state='gray'><span name>" + cust.CustName + "</span><span cntspan style='display:none;'>(<span count></span>)</span></a></td></tr>");
+                        users[cust.OpenId] = cust;
+                        continue;
+                    }
+                }
+            }, "json");
+        }
+
+        function onSelectAll() {
+            if (!($("#ckALL").prop("checked"))) return;
+            $("#ckNone").removeAttr("checked");
+            $(":checkbox[name='userlist']").each(function () {
+                if ($(this).attr("checked") != "checked") {
+                    $(this).prop("checked", "checked");
+                }
+            });
+            openBoardcast();
+        }
+
+        function selectNone() {
+            $("#ckNone").prop("checked", "checked");
+            onSelectNone();
+            $("#ckNone").removeAttr("checked");
+        }
+
+        function onSelectNone() {
+            if (!($("#ckNone").prop("checked"))) return;
+            $("#ckALL").removeAttr("checked");
+            $(":checkbox[name='userlist']").each(function () {
+                $(this).removeAttr("checked");
+            });
+            hideChat();
+            hideBoardcast();
+        }
+
+        function onSelectSingle(obj) {
+            var selected = $(obj).prop("checked");
+            if (selected) {
+                $("#ckNone").removeAttr("checked");
+            } else {
+                $("#ckALL").removeAttr("checked");
+            }
+            var cnt = $(":checkbox[name='userlist']:checked").length;
+            if (cnt == 0) {
+                hideChat();
+                hideBoardcast();
+            } else if (cnt == 1) {
+                openChat($(":checkbox[name='userlist']:checked").val());
+            } else if (cnt > 1) {
+                openBoardcast();
+            }
+        }
+
+        function hideCustChatWindow(openId) {
+            var idForName = openId.remove("[^a-zA-Z0-9]");
+            var cw = $("#cw" + idForName);
+            if (cw.length == 1) {
+                cw.hide();
+                var eA = $("#chatUserList tr[openid='" + idForName + "'] a");
+                var color = eA.attr("state");
+                if (color == "green") {
+                    eA.removeClass(color);
+                    color = eA.attr("preState");
+                    eA.addClass(color);
+                    eA.attr("state", color);
+                    eA.attr("preState", "");
+                } else {
+                    debugger;
+                }
+            } else {
+                debugger;
+            }
+        }
+
+        function hideChat() {
+            if (currentCustomer != null) hideCustChatWindow(currentCustomer.OpenId);
+            currentCustomer = null
+            $("#chatPanel").hide();
+        }
+
+        function hideBoardcast() {
+            $("#boardcastPanel").hide();
+        }
+
+        function boardcastMsg() {
+            var user;
+            if ($("#ckALL").prop("checked")) {
+                user = "userlist=all";
+            } else {
+                user = $(":checkbox[name='userlist']:checked").serialize();
+            }
+            var msg = $("#bcMsgContent").serialize();
+            var data = user + "&" + msg;
+            $.post("/wechat/DoEnterpriseAcBroadcase", data,
+            function (data) {
+                if (data.Code != 0) {
+                    alert("message post fail, error message is " + data.Msg);
+                } else {
+                    alert("Message Send Successfully");
+                    $("#bcMsgContent").val("");
+                }
+            }, "json");
+        }
+
+        function initPreDefinedMsg(e) {
+            @foreach (EnumData premsg in PreMsgs)
+             {
+                 @: e.append("<option value=\"@premsg.Value\">@premsg.Name</option>");
+             }
+        }
+
+        function insertBcPreMsg() {
+            var s = $("#bcpremsg").val();;
+            if (s) {;
+                $("#bcMsgContent").val($("#bcMsgContent").val()+s);
+            }
+        }
+
+        function insertPreMsg() {
+            var s = $("#premsg").val();;
+            if (s) {;
+                $("#chatinput").val($("#chatinput").val() + s);
+            }
+        }
+    </script>
+</head>
+<body style="height: 100%;overflow:hidden">
+    <div style="position:absolute;left:600px;top:-8px;">
+        <h3> TSR:  @ViewData["userId"] </h3>
+    </div> 
+    <div style="position:absolute;left:1200px;top:5px;">
+        <a href="/wechat/logout" onclick="window.history.forward(1); ">logout</a>
+    </div>    
+    <table style="height: 600px;width:100%;margin-top:15px">
+        <tr style="height: 100%;">
+            <td valign="top" style="height: 100%;width:20%">
+                <fieldset style="height: 594px">
+                    <legend>Customer List &nbsp;&nbsp;<input id="ckALL" type="checkbox" name="selectAll" value="all" onclick="onSelectAll();" />All&nbsp;<input id="ckNone" type="checkbox" name="selectNone" value="none" onclick="onSelectNone();" />None </legend>
+                    <table id="chatUserList"></table>
+                </fieldset>
+            </td>
+            <td valign="top" style="width:80%">
+                <div id="chatPanel" style="display:none;">
+                    <fieldset style="height: 145px;">
+                        <legend>Customer Details</legend>
+                        <table>
+                            <tr>
+                                <td>Name:</td>
+                                <td id="to.custName"></td>
+                            </tr>
+                            <tr>
+                                <td>Mobile:</td>
+                                <td id="to.mobile"></td>
+                            </tr>
+                            <tr>
+                                <td>Email:</td>
+                                <td id="to.email"></td>
+                            </tr>
+                            <tr>
+                                <td>State:</td>
+                                <td id="to.state"></td>
+                            </tr>
+                            <tr>
+                                <td>Source:</td>
+                                <td id="to.source"></td>
+                            </tr>
+                            <tr>
+                                <td>Created Date:</td>
+                                <td id="to.createDt"></td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                    <fieldset style="height: 435px;padding-top:5px;">
+                        <legend id="chatTitle">Chat with 童艳喜</legend>
+                        <div id="chatHisWindow" style="height: 325px;overflow:auto;border:1px solid gray">
+
+                        </div>
+                        <div id="chatInputWindow" style="height: 70px;margin-top:5px">
+                            <form>                                
+                                <textarea name="msgContent" id="chatinput" maxlength="2048" style="height:60px;width:100%" onkeypress="keypress();"  required></textarea>
+                                <input type="hidden" name="openId" />
+                                <input type="hidden" name="userId" value="@ViewData["userId"]" />
+                                <br />
+                                <div style="float:left;width:40%;">
+                                    <select id="premsg"></select>
+                                    <input type="button" value="Insert PreDefined Msg" onclick="insertPreMsg();" />
+                                </div>
+                                <div style="padding:5px;float:right">
+                                     <input type="button" value="Send" onclick="postMessage();" name="sendChat" />
+                                </div>
+</form>
+                        </div>
+                    </fieldset>
+                </div>
+                <div id="boardcastPanel" style="display:none;">
+                    <fieldset style="height: 435px;padding-top:5px;">
+                        <legend id="boardcastTitle">Send Msg To All</legend>
+                        <textarea id="bcMsgContent" name="msgContent"  maxlength="2048" style="width:98%;height:100px" autofocus></textarea>
+                        <br />
+                        <br />
+                        <div style="float:left;width:40%;padding-left:5px;">
+                            <select id="bcpremsg"></select>
+                            <input type="button" value="Insert PreDefined Msg" onclick="insertBcPreMsg();" />
+                        </div>
+                        <div style="text-align:left;">
+                            <input type="button" value="Send" onclick="boardcastMsg();"/>
+                        </div>
+                    </fieldset>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+<script>
+    $(function () {
+        loadCustList();
+        initPreDefinedMsg($("#bcpremsg"));
+        initPreDefinedMsg($("#premsg"));
+    });
+
+</script>
