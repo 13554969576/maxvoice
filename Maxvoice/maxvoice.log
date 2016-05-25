@@ -311,3 +311,4 @@ System.Data.Entity.Infrastructure.DbUpdateException: An error occurred while upd
 [2016-05-07 15:11:08,910] [9] [DEBUG] [Maxvoice.MvcApplication] - session end. kan
 [2016-05-09 21:47:28,908] [9] [DEBUG] [Maxvoice.Service.ChatService] - dispatcher the customer Kan to kan
 [2016-05-09 21:48:49,726] [12] [DEBUG] [Maxvoice.MvcApplication] - session end. kan
+[2016-05-23 23:11:11,659] [6] [DEBUG] [Maxvoice.Controllers.WeChatController] - administrator login

@@ -14,20 +14,33 @@ namespace Maxvoice.Utils
     public class EnterpriceAccountUtil
     {
         private static ILog log = log4net.LogManager.GetLogger(typeof(EnterpriceAccountUtil));
+        
+        //Token, during setting the callback url, need to provide a token to verify the new callback url
         private const string EncodingToken = "tongyanxi";
+        //EncodingToken, during setting the callback url, need to provide a EncodingToken to verify the new callback url
         private const string EncodingAESKey = "5RTfixO8WSIfvNTOYUs4c6fhklOPgNrzJSjtQPgrpww";
-        private const string URL_TOKEN = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={0}&corpsecret={1}";       
+        //the url to request the AccessToken
+        private const string URL_TOKEN = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={0}&corpsecret={1}";  
+        //the url to send service message      
         private const string URL_SEND_MESSAGE = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={0}";
+        //the url to request to create a new member
         private const string URL_CREATE_MEMBER = "https://qyapi.weixin.qq.com/cgi-bin/user/create?access_token={0}";
+        //the url to request to invite a wechat memeber
         private const string URL_INVITE_MEMBER = "https://qyapi.weixin.qq.com/cgi-bin/invite/send?access_token={0}";
+        //the url to get the wechat enterprie account member list
         private const string URL_GET_MEMBER_LIST = "https://qyapi.weixin.qq.com/cgi-bin/user/list?access_token={0}&department_id={1}&fetch_child={2}&status={3}";
+        //Crop id, can be found in the wechat account information, use to request the AccessToken
         private static string CROP_ID = "wxf4774c756a351ff8";
+        //Manager Group Secret, can be found in the manager group information, use to request the AccessToken
         private static string CROP_SECRET = "FrP-Z44ewUnc766wAjWDEHIHHWzT7o_eGCsLKFQFToKTTXVRqwyVrBy4pupVpgVP";
         private static String token = null;
         private static DateTime? tokenExpiredTm = null;
 
         public static Object tokenLock = new Object();
 
+        //AccessToken, use to send access the wechat server, can request from wechat server using crop id and cecret, 
+        //it genereated by the tencent wechat server, and will be expired in 7200 senconds or more, which is specified in the 
+        //response in the ExpiresIn field.
         public static string Token
         {
             get
@@ -51,6 +64,8 @@ namespace Maxvoice.Utils
             }
         }
 
+        //create wechat enterprise account member, if the token request fail or member create fail, return false, 
+        //and the fail message will to put into the msg arg.
         public static bool createMember(WeChatUser user,out string msg)
         {
             msg = null;
@@ -88,6 +103,8 @@ namespace Maxvoice.Utils
             return true;
         }
 
+        //invite a wechat enterprise account member to subscribe the account, if the token request fail or invite request fail, 
+        //return false, and the fail message will to put into the msg arg.
         public static bool inviteMember(string openId, out string msg)
         {
             msg = null;
@@ -110,6 +127,8 @@ namespace Maxvoice.Utils
             return true;
         }
 
+        //post message to member, if the token request fail or post message request fail, 
+        //return false, and the fail message will to put into the msg arg.
         public static bool postMessage(Object data, out string msg)
         {
             msg = null;
@@ -129,6 +148,7 @@ namespace Maxvoice.Utils
             return false;
         }
 
+        //during setting the wechat application callback url, the wechat server will verify the new url
         public static bool verifyCallBackInterface(string msg_signature, string timestamp,string nonce, string echostr, out string sourceStr)
         {
             Tencent.WXBizMsgCrypt wxcpt = new Tencent.WXBizMsgCrypt(EncodingToken, EncodingAESKey, CROP_ID);            
@@ -143,6 +163,8 @@ namespace Maxvoice.Utils
             return true;
         }
 
+        //parse the event sent by toncent wechat server, the event interface is defined by Tencent, for the detail, can refer to Tencent website,
+        //the event content is in xml format, and the code is be encrypted.  
         public static WeChatEvent parseEvent(string msg_signature, string timestamp,string nonce,string source, out string msg)
         {
             msg = null;
@@ -193,6 +215,8 @@ namespace Maxvoice.Utils
             return e;
         }
 
+        //after the demo application received the event, it should be responsed in 5 secends, otherwise, the wechat server will
+        //send the event repeadly at most three times.
         public static string msgToResponceTextEvent(string timestamp, string nonce,WeChatEvent e)
         {
             Tencent.WXBizMsgCrypt wxcpt = new Tencent.WXBizMsgCrypt(EncodingToken, EncodingAESKey, CROP_ID);
@@ -208,6 +232,8 @@ namespace Maxvoice.Utils
             return sEncryptMsg;
         }
 
+        //get member list in the wechat enterprise account address book, if the token request fail or get member list fail, 
+        //return false, and the fail message will to put into the msg arg.
         public static List<WeChatUserViewModel> getMemeberList(out string msg)
         {
             msg = null;

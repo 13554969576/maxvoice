@@ -25,6 +25,12 @@ namespace Maxvoice.Controllers
         private TSRService tsrService = new TSRService();
         private EnumDataService enumdataService = new EnumDataService();
 
+        //handle the login request, vevify the user, and check his role, if verified fail or the role setting is invalid, 
+        //dispatcher the respose to the login page back, if the role is admin, dispatcher the response to the adminidtrator page
+        //if the role is enterprise TSR, call the chat service to begin the TSR's work 
+        //and dispatcher the page the enterprise account page. after the TSR login, the applicaiton will check whether there is 
+        //any customer to be responsed and no TSR can response he/her, it happend in the case the customer send message via enterprise 
+        //account during the demo applicaion is down or all TSR is offline.
         public ActionResult Login(string userId, string password)
         {
             string msg;
@@ -55,12 +61,16 @@ namespace Maxvoice.Controllers
             }
         }
 
+        //handle the logout request. abandon the session, and stop the TSR's work, 
+        //the applicaion will check whether there still is any customer to be response(just in the case the TSR still not read his/her message),
+        //if yes, will dispatch his/her work to other TSR, if none TSR online, put the customer to a list, which will be handled by any TSR login later
         public ActionResult logout()
         {
             Session.Abandon();
             return Redirect("/");
         }
 
+        //open the administrator main page.
         public ActionResult AdminMain(string userId)
         {
             log.Debug("administrator login");
@@ -68,12 +78,15 @@ namespace Maxvoice.Controllers
             return View("Admin", "BlankLayout");
         }
 
+        //open the service acount main page.
         public ActionResult ServiceAcChat(string userId)
         {
             ViewData["userId"] = userId;
             return View("ServiceAcChat", "BlankLayout");
         }
 
+        //open the enterprise account TSR chat page. at this time, just init the predefined message list, 
+        //for other detail information on the page, will init other http request through ajax.
         public ActionResult EnterpriseAcChat(string userId)
         {
             if (Session["user"] == null)
@@ -85,11 +98,14 @@ namespace Maxvoice.Controllers
             return View("EnterpriseAcChat", "BlankLayout");
         }
 
+        //the index page
         public ActionResult Index()
         {
             //log.Debug( "The Import Index Page");
             return View();
         }
+
+        //open service acount bind page
         public ActionResult BindServiceAccount(string code)
         {     
             log.Debug(String.Format("code is {0}", code));           
@@ -115,6 +131,7 @@ namespace Maxvoice.Controllers
             return View("BindServiceAccount", "BlankLayout");
         }
 
+        //for service account, bind the service account openid to his/her detail information, such as wechatid/email/phone number
         public ActionResult DoBindServiceAccount(string firstName, string lastName, string mobile, string openId)
         {
             WeChatUser user = service.getByOpenId(openId);
@@ -149,11 +166,17 @@ namespace Maxvoice.Controllers
             return View("DoBindServiceAccount", "BlankLayout");
         }
 
+        //open the enterprise account broadcast page. it is not used now.
         public ActionResult EnterpriseAcBroadcase()
         { 
             return View("EnterpriseAcBroadcase", "BlankLayout");
         }
 
+        //enterprise account message broadcast, if broadcast to all members, the client will just send the user name @all, 
+        //in that case, the message will be broadcast to all members, one entry will be added to the db using @all as the receiver,
+        //and no entry will be added to db for each single memeber.
+        //if broadcast to selected member list, the message will be sent to specified customer, and for each member, there will be 
+        //a db entry to recode this message transport.
         public ActionResult DoEnterpriseAcBroadcase(string msgContent,string[] userlist)
         {
             string tsr = (string)Session["user"];
@@ -201,11 +224,12 @@ namespace Maxvoice.Controllers
             }
             return Json(resp);
         }
+        //for service account
         public ActionResult serviceAcBroadcase()
         {
             return View("ServiceAcBroadcase", "BlankLayout");
         }
-
+        //for service account
         public ActionResult DoServiceAcBroadcase(string msgContent)
         {
             string msg;
@@ -229,14 +253,15 @@ namespace Maxvoice.Controllers
             ViewData["msg"] = msg;
             return View("DoBroadcase", "BlankLayout");
         }
-
+        //for service account
         public JsonResult getServiceAcCustList()
         {
             List<WeChatUserViewModel> list = service.find("11",null);
             list.AddRange(service.find("12", null));
             return Json(list);
         }
-
+        //get the enterprise account member list which is in the db. 
+        //the list is used to init the customer list in the enterprise account what page
         public JsonResult getEnterpriseAcCustList()
         {
             //log.Debug("getEnterpriseAcCustList");
@@ -245,30 +270,38 @@ namespace Maxvoice.Controllers
             return Json(list);
         }
 
+        //for service accunt
         public JsonResult getServiceAcLastMsg(string openId)
         {
             List<ChatViewModel> list = chatService.getLastMsg(openId,"1");
             return Json(list);
         }
 
+        //get the specified customer's last message, it include the unread message, 
+        //and if the count of unread message is less than 20, and the customer 
+        //has historic message, will include some historic message, but the total count is 20 at most
+        //this list is used to init a new chat window with a single customer.
         public JsonResult getEnterpriseAcLastMsg(string openId)
         {
             List<ChatViewModel> list = chatService.getLastMsg(openId, "2");
             return Json(list);
         }
 
+        //for service account
         public JsonResult getServiceAcUnReadMsg(string openId)
         {               
             List<ChatViewModel> list = chatService.getUnReadMsg(openId, "1");           
             return Json(list);
         }
 
+        //get the specified customer's last unread message
         public JsonResult getEnterpriseAcUnReadMsg(string openId)
         {
             List<ChatViewModel> list = chatService.getUnReadMsg(openId, "2");
             return Json(list);
         }
 
+        //for service account
         public JsonResult getServiceAcUnReadMsgCount()
         {
             string tsr = (string)Session["user"];
@@ -276,6 +309,8 @@ namespace Maxvoice.Controllers
             return Json(list);
         }
 
+        //get the unread message count of every customer, it is a list, and this list is to notify the TSR somewho has  
+        //new message(and the count) to be read
         public JsonResult getEnterpriseAcUnReadMsgCount()
         {
             string tsr = (string)Session["user"];
@@ -285,6 +320,7 @@ namespace Maxvoice.Controllers
             return Json(list);
         }
 
+        //for service account
         public JsonResult postServiceAcMsg(string openId, string msgContent,string userId,string WPAc)
         {           
             Resp resp = new Resp();
@@ -315,6 +351,9 @@ namespace Maxvoice.Controllers
             return Json(resp);
         }
 
+        //post message to the enterprise account memeber.
+        //the message will be added to the db to record the message transport
+        //if the customer still is not in any TSR's handling customer list, this customer will be put into the current TSR's customer list
         public JsonResult postEnterpriseAcMsg(string openId, string msgContent, string userId, string WPAc)
         {
             Resp resp = new Resp();
@@ -347,6 +386,7 @@ namespace Maxvoice.Controllers
             return Json(resp);
         }
 
+        //mark the message read.
         public JsonResult markRead(string chatIds)
         {
             log.Debug("mark read, id list is " + chatIds);
@@ -359,6 +399,7 @@ namespace Maxvoice.Controllers
             return Json(resp);
         }
         
+        //for service account
         [HttpGet]
         public String OnEvent(String signature,String timestamp, String nonce,String echostr)
         {
@@ -366,6 +407,9 @@ namespace Maxvoice.Controllers
             return echostr;
         }
 
+        //handle the envet which sent from the Tencent wechat server when some thing happened.
+        //for the text message event, will record the message to db with state 0(will be handle by the TSR later)
+        //for subscribe and unsubscribe, will change the customer's state in db.
         [HttpPost]
         public String OnEvent()
         {
@@ -397,6 +441,7 @@ namespace Maxvoice.Controllers
             return "";
         }
 
+        //verify the callback url setting
         [HttpGet]
         public String OnEnterpriseEvent(String msg_signature, String timestamp, String nonce, String echostr)
         {
@@ -406,6 +451,9 @@ namespace Maxvoice.Controllers
             return sourceStr;
         }
 
+        //handle the envet which sent from the Tencent wechat server when some thing happened.
+        //for the text message event, will record the message to db with state 0(will be handle by the TSR later)
+        //for subscribe and unsubscribe, will change the customer's state in db.
         [HttpPost]
         public String OnEnterpriseEvent(string msg_signature, string timestamp, string nonce)
         {
@@ -437,6 +485,9 @@ namespace Maxvoice.Controllers
             return null;
         }
 
+        //handle the text message event
+        //add entry in the db
+        //dispatch the customer to a TSR. if there is none TSR online, the customer will put into a to be response customet list.
         private void handleEnterpriseTextMsg(WeChatEvent e)
         {
             Chat chat = new Chat()
@@ -455,19 +506,20 @@ namespace Maxvoice.Controllers
             chatService.dispatchCust(chat.CustOpenId);
         }
 
-
+        //for service account
         private void handleSubscribeServiceAc(WeChatEvent e)
         {
             log.Debug("User subscribe, openId is " + e.FromUserName);
             service.updateStateByOpenId(e.FromUserName, "12");            
         }
-
+        //for service account
         private void handleUnsubscribeServiceAc(WeChatEvent e)
         {
             log.Debug("User unsubscribe, openId is " + e.FromUserName);
             service.updateStateByOpenId(e.FromUserName,"19");            
         }
 
+        //for service account
         private void handleTextMsg(WeChatEvent e)
         {
             /*
@@ -490,6 +542,7 @@ namespace Maxvoice.Controllers
             chatService.create(chat);
         }
 
+        //for service account
         private void handlePrivateServiceClick(WeChatEvent weEvent)
         {
             string openId = weEvent.FromUserName;
@@ -510,6 +563,7 @@ namespace Maxvoice.Controllers
             }
         }
 
+        //for service account
         public ActionResult createMenu()
         {
             string msg; 
@@ -532,12 +586,15 @@ namespace Maxvoice.Controllers
             return View();
         }
 
+        //open the invite member page, as we can't invite member at this way anymore, now, 
+        //this page will just can add the member to the enterprise account addressbook
         public ActionResult Invite()
         {
             ViewData["users"] = new WeChatUserService().find("0", null);
             return View("Invite", "BlankLayout");
         }
 
+        //add the member to the enterprise account addressbook
         public ActionResult DoInvite(List<WeChatUserViewModel> users)
         {
             var list = users.Where(e => e.Selected == "on");
@@ -551,7 +608,7 @@ namespace Maxvoice.Controllers
             return View("DoInvite", "BlankLayout");
         }
 
-
+        //list the enterprise account members in the db
         public ActionResult listEnterpriseMembers()
         {
             List<WeChatUserViewModel> list = service.findEnterpriseMembers();            
@@ -560,6 +617,7 @@ namespace Maxvoice.Controllers
             return View("List", "BlankLayout");
         }
 
+        //for service account
         public ActionResult listServiceMembers()
         {
             List<WeChatUserViewModel> list = service.findServiceAcMembers();
@@ -568,6 +626,7 @@ namespace Maxvoice.Controllers
             return View("List", "BlankLayout");
         }
 
+        //delete a member in the db
         public JsonResult deleteUser(string accountType, long id)
         {
             string msg;
@@ -575,11 +634,13 @@ namespace Maxvoice.Controllers
             return Json(new Resp() { Code = b ? 0 : -1,Msg=msg});
         }
 
+        //open the import member page
         public ActionResult Import()
         {
             return View("Import", "BlankLayout");
         }
 
+        //get the member list from the enerprise account addressbook, and open and init the sync enterprise account page
         public ActionResult synchronizeEnterpriseAc()
         {
             string msg;
@@ -588,6 +649,8 @@ namespace Maxvoice.Controllers
             return View("synchronizeEnterpriseAc", "BlankLayout");
         }
 
+        //sync members from enterprise account addressbook to db, just sync the selected memebers, if the member not exist in the db,
+        //will add the member to db, if the member already exist in db, will update db accordingly.
         public ActionResult DoSynchronizeQyAc(List<WeChatUserViewModel> users)
         {
             foreach(WeChatUserViewModel user in users)
@@ -634,7 +697,7 @@ namespace Maxvoice.Controllers
             return View("DoSynchronizeQyAc", "BlankLayout"); ;
         }
 
-
+        //import member list from excel.
         [HttpPost]
         public ActionResult DoImport(object obj)
         {
@@ -783,6 +846,7 @@ namespace Maxvoice.Controllers
             return View("DoImport", "BlankLayout");
         }
 
+        //list predefinded messages
         public ActionResult listPreDefineMsg()
         {
             string msg;
@@ -791,6 +855,7 @@ namespace Maxvoice.Controllers
             return View("ListPreDefineMsg", "BlankLayout");
         }
 
+        //delete predefined message
         public JsonResult deletePreMsg(long id)
         {
             string msg;
@@ -798,11 +863,13 @@ namespace Maxvoice.Controllers
             return Json(new Resp() { Code = b ? 0 : -1, Msg = msg });
         }
         
+        //open the predefined message import page
         public ActionResult ImportPreDefineMsg()
         {
             return View("ImportPreDefineMsg", "BlankLayout");
         }
 
+        //import the predefined messages from excel file.
         [HttpPost]
         public ActionResult DoImportPreDefineMsg(object obj)
         {
