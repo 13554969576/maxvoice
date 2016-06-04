@@ -3,6 +3,7 @@ using Maxvoice.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -14,11 +15,11 @@ namespace Maxvoice.Utils
     public class EnterpriceAccountUtil
     {
         private static ILog log = log4net.LogManager.GetLogger(typeof(EnterpriceAccountUtil));
-        
+
         //Token, during setting the callback url, need to provide a token to verify the new callback url
-        private const string EncodingToken = "tongyanxi";
+        private static string EncodingToken;
         //EncodingToken, during setting the callback url, need to provide a EncodingToken to verify the new callback url
-        private const string EncodingAESKey = "5RTfixO8WSIfvNTOYUs4c6fhklOPgNrzJSjtQPgrpww";
+        private static string EncodingAESKey;
         //the url to request the AccessToken
         private const string URL_TOKEN = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={0}&corpsecret={1}";  
         //the url to send service message      
@@ -30,13 +31,21 @@ namespace Maxvoice.Utils
         //the url to get the wechat enterprie account member list
         private const string URL_GET_MEMBER_LIST = "https://qyapi.weixin.qq.com/cgi-bin/user/list?access_token={0}&department_id={1}&fetch_child={2}&status={3}";
         //Crop id, can be found in the wechat account information, use to request the AccessToken
-        private static string CROP_ID = "wxf4774c756a351ff8";
+        private static string CROP_ID;
         //Manager Group Secret, can be found in the manager group information, use to request the AccessToken
-        private static string CROP_SECRET = "FrP-Z44ewUnc766wAjWDEHIHHWzT7o_eGCsLKFQFToKTTXVRqwyVrBy4pupVpgVP";
+        private static string CROP_SECRET;
         private static String token = null;
         private static DateTime? tokenExpiredTm = null;
 
         public static Object tokenLock = new Object();
+
+
+        static EnterpriceAccountUtil(){
+             EncodingToken= ConfigurationManager.AppSettings["EncodingToken"] ?? string.Empty;
+             EncodingAESKey = ConfigurationManager.AppSettings["EncodingAESKey"] ?? string.Empty;
+             CROP_ID = ConfigurationManager.AppSettings["CROP_ID"] ?? string.Empty;
+             CROP_SECRET = ConfigurationManager.AppSettings["MANAGE_GROUP_SECRET"] ?? string.Empty;
+        }
 
         //AccessToken, use to send access the wechat server, can request from wechat server using crop id and cecret, 
         //it genereated by the tencent wechat server, and will be expired in 7200 senconds or more, which is specified in the 
@@ -151,6 +160,7 @@ namespace Maxvoice.Utils
         //during setting the wechat application callback url, the wechat server will verify the new url
         public static bool verifyCallBackInterface(string msg_signature, string timestamp,string nonce, string echostr, out string sourceStr)
         {
+            log.Error(String.Format("EncodingToken={0}, EncodingAESKey={1}, CROP_ID={2}", EncodingToken,EncodingAESKey,CROP_ID));
             Tencent.WXBizMsgCrypt wxcpt = new Tencent.WXBizMsgCrypt(EncodingToken, EncodingAESKey, CROP_ID);            
             int ret = 0;
             sourceStr = "";

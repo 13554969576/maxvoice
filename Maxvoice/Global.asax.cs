@@ -20,6 +20,7 @@ namespace Maxvoice
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+            string s = System.Configuration.ConfigurationManager.AppSettings["EncodingToken"];
             chatService.initWorking();
         }
 

@@ -14,7 +14,7 @@ namespace Maxvoice.Models
             get
             {
                 String gender = Gender;
-                if (gender == null) return null;
+                if (gender == null || gender.Trim() == "" || gender.Trim() == "0") return "Unknow";
                 if (gender != "2" && gender != "1") throw new FormatException("The Gender should only be 1 or 2");
                 return Gender == "2" ? "Female" : "Male";
             }

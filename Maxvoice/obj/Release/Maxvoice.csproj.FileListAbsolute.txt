@@ -17,7 +17,6 @@ D:\Document\source\c#\Maxvoice\Maxvoice\bin\Maxvoice.pdb
 D:\Document\source\c#\Maxvoice\Maxvoice\bin\Antlr3.Runtime.dll
 D:\Document\source\c#\Maxvoice\Maxvoice\bin\EntityFramework.dll
 D:\Document\source\c#\Maxvoice\Maxvoice\bin\EntityFramework.SqlServer.dll
-D:\Document\source\c#\Maxvoice\Maxvoice\bin\log4net.dll
 D:\Document\source\c#\Maxvoice\Maxvoice\bin\Microsoft.AI.Agent.Intercept.dll
 D:\Document\source\c#\Maxvoice\Maxvoice\bin\Microsoft.AI.DependencyCollector.dll
 D:\Document\source\c#\Maxvoice\Maxvoice\bin\Microsoft.AI.PerfCounterCollector.dll

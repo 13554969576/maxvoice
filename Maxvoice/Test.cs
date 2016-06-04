@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Web;
 
@@ -9,13 +10,18 @@ namespace Maxvoice
 {
     public class Program
     {
+       
+
         public void test()
         {
-             
+
+            
+            /*
             var c = new { access_token="", expires_in="", errcode="", errmsg="" };
             String json = "{\"access_token\":\"DilX9oSwUmv_NzIQvAM1dbzWgorSUK6s9QC09-WVxUG5B_ngTFkzScUvEOaNYw3p\",\"expires_in\":7200}";
             TokenResult obj = JsonConvert.DeserializeObject<TokenResult>(json);
             if (obj.access_token != null) { }  ;
+            */
            
         }
 
